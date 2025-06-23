@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>iTeach - Build an Atom</title>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+    <link type="text/css" rel="stylesheet" href="main.css" />
+    <style>
+      body {
+        background-color: #f0f0f0;
+        color: #444;
+      }
+      a {
+        color: #08f;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="info"></div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./three/build/three.module.min.js"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import * as THREE from "three";
+
+      import { DragControls } from "/DragControls.js";
+      import { LineMaterial } from "/LineMaterial.js";
+      import { LineGeometry } from "/LineGeometry.js";
+      import { Line2 } from "/lines/Line2.js";
+      import { OrbitControls } from "/OrbitControls.js";
+      import { XRButton } from "/webxr/XRButton.js";
+      import { XRControllerModelFactory } from "/webxr/XRControllerModelFactory.js";
+      import { XRHandModelFactory } from "/webxr/XRHandModelFactory.js";
+
+      //Config
+      let showElement = true;
+      let showIon = true;
+      let showStable = true;
+      let showSymbol = true;
+      let elementTextType = 1; //Type 0 = inside atom, Type 1 = inside symbol
+      let showDebug = false;
+      let neutronTextColor = 0x00ffff;
+
+      let fixedZ = -1.5; // Fixed Z position
+      let electronCount = 0;
+      let neutronCount = 0;
+      let protonCount = 0;
+      let oldElectronCount = 0;
+      let oldNeutronCount = 0;
+      let oldProtonCount = 0;
+      let text = createText("", 0.15);
+      let textIon = createText("", 0.15);
+      let textStable = createText("", 0.15);
+      let textDebug = createText("", 0.15);
+      let debug = new THREE.Vector3();
+      let stableValue = true;
+      let corePosition = 0;
+      let textProtons = createText("Protons: " + protonCount, 0.1, 0xff0000);
+      let textNeutrons = createText("Neutrons: " + neutronCount, 0.1, neutronTextColor);
+      let textElectrons = createText(
+        "Electrons: " + electronCount,
+        0.1,
+        0x0000ff
+      );
+      let previousPosition = new THREE.Vector3();
+
+      let textSymbolLetter;
+      let textSymbolProtons;
+      let textSymbolWeight;
+      let textSymbolCharge;
+
+      //Define Electron Positions
+      const positions = [
+        new THREE.Vector3(-0.35, 1.5, fixedZ), // Position 1
+        new THREE.Vector3(0.35, 1.5, fixedZ), // Position 2
+        new THREE.Vector3(0.435, 1.75, fixedZ), // Position 3
+        new THREE.Vector3(0.435, 1.25, fixedZ), // Position 4
+        new THREE.Vector3(0.15, 1.975, fixedZ), // Position 5
+        new THREE.Vector3(-0.15, 1.025, fixedZ), // Position 6
+        new THREE.Vector3(-0.435, 1.75, fixedZ), // Position 7
+        new THREE.Vector3(0.15, 1.025, fixedZ), // Position 8
+        new THREE.Vector3(-0.435, 1.25, fixedZ), // Position 9
+        new THREE.Vector3(-0.15, 1.975, fixedZ), // Position 10
+      ];
+
+      const core1 = [new THREE.Vector3(0, 1.5, fixedZ)];
+      const core2 = [
+        new THREE.Vector3(-0.035, 1.465, fixedZ),
+        new THREE.Vector3(0.035, 1.535, fixedZ),
+      ];
+      const core3 = [
+        new THREE.Vector3(0, 1.55, fixedZ),
+        new THREE.Vector3(-0.05, 1.47, fixedZ),
+        new THREE.Vector3(0.05, 1.47, fixedZ),
+      ];
+      const core4 = [
+        new THREE.Vector3(-0.035, 1.46, fixedZ),
+        new THREE.Vector3(0.035, 1.54, fixedZ),
+        new THREE.Vector3(-0.035, 1.535, fixedZ),
+        new THREE.Vector3(0.035, 1.465, fixedZ),
+      ];
+      const core5 = [
+        //Layer 1
+        new THREE.Vector3(0, 1.5, fixedZ),
+        new THREE.Vector3(0.01, 1.56, fixedZ - 0.05),
+        new THREE.Vector3(-0.06, 1.51, fixedZ - 0.05),
+        new THREE.Vector3(-0.01, 1.46, fixedZ - 0.05),
+        new THREE.Vector3(0.06, 1.49, fixedZ - 0.05),
+        //Layer 2
+        new THREE.Vector3(-0.04, 1.41, fixedZ - 0.08),
+        new THREE.Vector3(0.05, 1.42, fixedZ - 0.08),
+        new THREE.Vector3(0.09, 1.5, fixedZ - 0.08),
+        new THREE.Vector3(0.06, 1.57, fixedZ - 0.08),
+        new THREE.Vector3(-0.05, 1.58, fixedZ - 0.08),
+        new THREE.Vector3(-0.09, 1.49, fixedZ - 0.08),
+        //Layer 3
+        new THREE.Vector3(0.05, 1.59, fixedZ - 0.1),
+        new THREE.Vector3(-0.065, 1.59, fixedZ - 0.1),
+        new THREE.Vector3(-0.11, 1.51, fixedZ - 0.1),
+        new THREE.Vector3(-0.09, 1.45, fixedZ - 0.1),
+        new THREE.Vector3(0.01, 1.39, fixedZ - 0.1),
+        new THREE.Vector3(0.095, 1.475, fixedZ - 0.1),
+        new THREE.Vector3(0.105, 1.55, fixedZ - 0.1),
+        new THREE.Vector3(0.01, 1.63, fixedZ - 0.13),
+        new THREE.Vector3(-0.1, 1.58, fixedZ - 0.13),
+      ];
+
+      let positionOccupied = Array(positions.length).fill(false); // Initialize the occupied array
+      let positionOccupiedCore = Array(core5.length).fill(false); // Initialize the occupied array
+
+      let controller1, controller2;
+      let controllerGrip1, controllerGrip2;
+
+      //////// Hand controls
+      let hand1, hand2;
+
+      const tmpVector1 = new THREE.Vector3();
+      const tmpVector2 = new THREE.Vector3();
+
+      let grabbing = false;
+      const scaling = {
+        active: false,
+        initialDistance: 0,
+        object: null,
+        initialScale: 1,
+      };
+
+      const spheres = [];
+      //////////
+
+      let raycaster2;
+
+      const intersected = [];
+
+      let container;
+      let camera, scene, renderer;
+      let controls, group;
+      let enableSelection = false;
+      let line;
+
+      const objects = [];
+
+      const mouse = new THREE.Vector2(),
+        raycaster = new THREE.Raycaster();
+
+      init();
+
+      function init() {
+        container = document.createElement("div");
+        document.body.appendChild(container);
+
+        camera = new THREE.PerspectiveCamera(
+          50,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          500
+        );
+
+        camera.position.y = 1.25;
+        camera.position.z = 1.5;
+
+        scene = new THREE.Scene();
+        //scene.background = new THREE.Color(0x000000);
+        //scene.scale.set(0.5, 0.5, 0.5);
+
+        scene.add(new THREE.AmbientLight(0xaaaaaa));
+
+        const light = new THREE.SpotLight(0xffffff, 10000);
+        light.position.set(0, 25, 50);
+        light.angle = Math.PI / 9;
+
+        light.castShadow = true;
+        light.shadow.camera.near = 10;
+        light.shadow.camera.far = 100;
+        light.shadow.mapSize.width = 1024;
+        light.shadow.mapSize.height = 1024;
+
+        scene.add(light);
+
+        group = new THREE.Group();
+        scene.add(group);
+
+        text = createText("X", 0.2, 0xfc8803);
+        text.position.set(0, 1.5, -1.5);
+        scene.add(text);
+
+        if (showIon) {
+          textIon = createText("", 0.15);
+          textIon.position.set(1, 2.4, -1.5);
+          scene.add(textIon);
+        }
+
+        if (showStable) {
+          textStable = createText("", 0.15);
+          textStable.position.set(1, 2.4, -1.5);
+          scene.add(textStable);
+        }
+
+        if (showDebug) {
+          textDebug = createText("", 0.15);
+          textDebug.position.set(1, 2.4, -1.5);
+          scene.add(textDebug);
+        }
+
+        textProtons.position.set(-0.7, 2.1, -1.5);
+        scene.add(textProtons);
+        textNeutrons.position.set(-0.73, 2, -1.5);
+        scene.add(textNeutrons);
+        textElectrons.position.set(-0.735, 1.9, -1.5);
+        scene.add(textElectrons);
+
+        if (showSymbol){
+        textSymbolLetter = createText("", 0.15);
+        scene.add(textSymbolLetter);
+        textSymbolProtons = createText("0", 0.12, 0xff0000);
+        scene.add(textSymbolProtons);
+        textSymbolWeight = createText("0", 0.12, 0x000000);
+        scene.add(textSymbolWeight);
+        textSymbolCharge = createText("0", 0.12, 0x000000);
+        scene.add(textSymbolCharge);
+        textSymbolLetter.position.set(0.8, 1.55, -1.5);
+        textSymbolProtons.position.set(0.66, 1.35, -1.5);
+        textSymbolWeight.position.set(0.66, 1.75, -1.5);
+        textSymbolCharge.position.set(0.95, 1.75, -1.5);
+
+        const planeGeometry = new THREE.PlaneGeometry(0.55, 0.48);
+        const planeGeometry2 = new THREE.PlaneGeometry(0.57, 0.5);
+
+        // Create a white material
+        const planeMaterial = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          side: THREE.DoubleSide,
+        });
+        const planeMaterial2 = new THREE.MeshBasicMaterial({
+          color: 0x000000,
+          side: THREE.DoubleSide,
+        });
+
+        // Create the plane mesh and add it to the scene
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.rotation.z = Math.PI / 2;
+        plane.position.x = 0.82;
+        plane.position.y = 1.56;
+        plane.position.z = -1.51;
+        scene.add(plane);
+
+        const plane2 = new THREE.Mesh(planeGeometry2, planeMaterial2);
+        plane2.rotation.z = Math.PI / 2;
+        plane2.position.x = 0.82;
+        plane2.position.y = 1.56;
+        plane2.position.z = -1.515;
+        scene.add(plane2);
+        }
+
+        const geometry = new THREE.SphereGeometry(0.05);
+
+        for (let i = 0; i < 30; i++) {
+          let sphereColor;
+          if (i % 3 == 0) {
+            sphereColor = 0xff0000;
+          } else if (i % 3 == 1) {
+            sphereColor = 0xaaaaaa;
+          } else if (i % 3 == 2) {
+            sphereColor = 0x0000ff;
+          }
+          const object = new THREE.Mesh(
+            geometry,
+            new THREE.MeshLambertMaterial({ color: sphereColor })
+          );
+          if (i % 3 == 0) {
+            if (i <= 12) {
+              object.position.x = i * 0.03 - 0.7;
+              object.position.y = 0.7;
+              object.position.z = fixedZ;
+            } else if (i <= 24) {
+              object.position.x = i * 0.03 - 1.1;
+              object.position.y = 0.78;
+              object.position.z = fixedZ;
+            } else {
+              object.position.x = i * 0.03 - 1.4;
+              object.position.y = 0.86;
+              object.position.z = fixedZ;
+            }
+
+            object.name = "proton";
+            object.number = i / 3;
+          } else if (i % 3 == 1) {
+            if (i <= 13) {
+              object.position.x = i * 0.03 - 0.2;
+              object.position.y = 0.7;
+              object.position.z = fixedZ;
+            } else if (i <= 25) {
+              object.position.x = i * 0.03 - 0.6;
+              object.position.y = 0.78;
+              object.position.z = fixedZ;
+            } else {
+              object.position.x = i * 0.03 - 0.9;
+              object.position.y = 0.86;
+              object.position.z = fixedZ;
+            }
+            object.name = "neutron";
+            object.number = (i - 1) / 3;
+          } else if (i % 3 == 2) {
+            if (i <= 14) {
+              object.position.x = i * 0.03 + 0.3;
+              object.position.y = 0.7;
+              object.position.z = fixedZ;
+            } else if (i <= 26) {
+              object.position.x = i * 0.03 - 0.1;
+              object.position.y = 0.78;
+              object.position.z = fixedZ;
+            } else {
+              object.position.x = i * 0.03 - 0.4;
+              object.position.y = 0.86;
+              object.position.z = fixedZ;
+            }
+
+            object.scale.x = 0.6;
+            object.scale.y = 0.6;
+            object.scale.z = 0.6;
+            object.name = "electron";
+            object.number = (i - 2) / 3;
+          }
+
+          object.castShadow = false;
+          object.receiveShadow = false;
+
+          object.position.x = parseFloat(object.position.x.toFixed(2));
+          object.position.y = parseFloat(object.position.y.toFixed(2));
+          object.position.z = parseFloat(object.position.z.toFixed(2));
+          object.homeX = object.position.x;
+          object.homeY = object.position.y;
+          object.homeZ = object.position.z;
+          /*
+                      console.log(
+                        object.name +
+                          object.number +
+                          " X: " +
+                          object.position.x +
+                          ", Y: " +
+                          object.position.y
+                      );
+                      */
+          scene.add(object);
+
+          objects.push(object);
+          group.add(object);
+        }
+
+        // Create circle points
+        const radius = 0.35;
+        const segments = 100;
+        const points = [];
+        for (let i = 0; i <= segments; i++) {
+          const theta = (i / segments) * Math.PI * 2;
+          points.push(Math.cos(theta) * radius, Math.sin(theta) * radius, 0);
+        }
+
+        // Create geometry
+        const geometry2 = new LineGeometry();
+        geometry2.setPositions(points);
+
+        // Create material
+        const material = new LineMaterial({
+          color: 0xaa00ff,
+          linewidth: 2, // Adjust thickness here
+          dashed: true,
+          dashSize: 0.05,
+          gapSize: 0.05,
+          resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
+        });
+
+        // Create the fat line
+        line = new Line2(geometry2, material);
+        line.computeLineDistances();
+        line.position.y = 1.5;
+        line.position.z = -1.5;
+        scene.add(line);
+
+        // Create circle points
+        const radius2 = 0.5;
+        const segments2 = 100;
+        const points2 = [];
+        for (let i = 0; i <= segments2; i++) {
+          const theta2 = (i / segments2) * Math.PI * 2;
+          points2.push(
+            Math.cos(theta2) * radius2,
+            Math.sin(theta2) * radius2,
+            0
+          );
+        }
+
+        // Create geometry
+        const geometry3 = new LineGeometry();
+        geometry3.setPositions(points2);
+
+        // Create material
+        const material2 = new LineMaterial({
+          color: 0xaa00ff,
+          linewidth: 2, // Adjust thickness here
+          dashed: true,
+          dashSize: 0.05,
+          gapSize: 0.05,
+          resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
+        });
+
+        // Create the fat line
+        const line2 = new Line2(geometry3, material2);
+        line2.computeLineDistances();
+        line2.position.y = 1.5;
+        line2.position.z = -1.5;
+        scene.add(line2);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setAnimationLoop(render);
+        renderer.shadowMap.enabled = true;
+        renderer.xr.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        document.body.appendChild(
+          XRButton.createButton(renderer, {
+            requiredFeatures: ["hit-test", "local-floor"],
+            optionalFeatures: [
+              "mesh-detection",
+              "plane-detection",
+              "hand-tracking",
+              //"depth-sensing"
+            ],
+            //'depthSensing': { 'usagePreference': [ 'gpu-optimized' ], 'dataFormatPreference': [] }
+          })
+
+          //ARButton.createButton(renderer, {
+          //mode: 'immersive-ar', // Specifies the AR mode
+          //'optionalFeatures': [ 'depth-sensing' ],
+          //'depthSensing': { 'usagePreference': [ 'gpu-optimized' ], 'dataFormatPreference': [] }
+          //})
+        );
+
+        // controllers
+
+        controller1 = renderer.xr.getController(0);
+        controller1.addEventListener("selectstart", onSelectStart);
+        controller1.addEventListener("select", onSelect); // Triggered during selection
+        controller1.addEventListener("selectend", onSelectEnd);
+        scene.add(controller1);
+
+        controller2 = renderer.xr.getController(1);
+        controller2.addEventListener("selectstart", onSelectStart);
+        controller2.addEventListener("select", onSelect); // Triggered during selection
+        controller2.addEventListener("selectend", onSelectEnd);
+
+        scene.add(controller2);
+
+        const controllerModelFactory = new XRControllerModelFactory();
+        const handModelFactory = new XRHandModelFactory();
+
+        controllerGrip1 = renderer.xr.getControllerGrip(0);
+        controllerGrip1.add(
+          controllerModelFactory.createControllerModel(controllerGrip1)
+        );
+        scene.add(controllerGrip1);
+
+        controllerGrip2 = renderer.xr.getControllerGrip(1);
+        controllerGrip2.add(
+          controllerModelFactory.createControllerModel(controllerGrip2)
+        );
+        scene.add(controllerGrip2);
+
+        //
+
+        hand1 = renderer.xr.getHand(0);
+        hand1.addEventListener("pinchstart", onPinchStartLeft);
+        hand1.addEventListener("pinchend", onPinchEndLeft);
+        hand1.add(handModelFactory.createHandModel(hand1));
+
+        scene.add(hand1);
+
+        // Hand 2
+        controllerGrip2 = renderer.xr.getControllerGrip(1);
+        controllerGrip2.add(
+          controllerModelFactory.createControllerModel(controllerGrip2)
+        );
+        scene.add(controllerGrip2);
+
+        hand2 = renderer.xr.getHand(1);
+        hand2.addEventListener("pinchstart", onPinchStartRight);
+        hand2.addEventListener("pinchend", onPinchEndRight);
+        hand2.add(handModelFactory.createHandModel(hand2));
+        scene.add(hand2);
+
+        //
+
+        const geometryLine = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, 0, 0),
+          new THREE.Vector3(0, 0, -1),
+        ]);
+
+        const line3 = new THREE.Line(geometryLine);
+        line3.name = "line";
+        line3.scale.z = 5;
+
+        controller1.add(line3.clone());
+        controller2.add(line3.clone());
+
+        raycaster2 = new THREE.Raycaster();
+
+        //
+
+        controls = new DragControls([...objects], camera, renderer.domElement);
+        controls.rotateSpeed = 2;
+        // controls.addEventListener("drag", render);
+        // Fix Z position during drag
+        controls.addEventListener("drag", function (event) {
+          //render();
+        });
+        //
+
+        window.addEventListener("resize", onWindowResize);
+
+        //document.addEventListener("click", onClick);
+        //window.addEventListener("keydown", onKeyDown);
+        //window.addEventListener("keyup", onKeyUp);
+
+        //render();
+      }
+
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      ///Hand stuff
+      const SphereRadius = 0.05;
+      function onPinchStartLeft(event) {
+        const controller = event.target;
+        const indexTip = controller.joints["index-finger-tip"];
+        const object = collideObject(indexTip);
+        if (object) {
+          grabbing = true;
+          indexTip.attach(object);
+          controller.userData.selected = object;
+          console.log("Selected", object);
+        }
+      }
+
+      function collideObject(indexTip) {
+        for (let i = 0; i < group.children.length; i++) {
+          const sphere = group.children[i];
+          const distance = indexTip
+            .getWorldPosition(tmpVector1)
+            .distanceTo(group.children[i].getWorldPosition(tmpVector2));
+
+          if (
+            distance <
+            sphere.geometry.boundingSphere.radius * sphere.scale.x
+          ) {
+            return sphere;
+          }
+        }
+
+        return null;
+      }
+
+      function onPinchStartRight(event) {
+        const controller = event.target;
+        const indexTip = controller.joints["index-finger-tip"];
+        const object = collideObject(indexTip);
+        if (object) {
+          grabbing = true;
+          indexTip.attach(object);
+          controller.userData.selected = object;
+          console.log("Selected", object);
+        }
+      }
+
+      function onPinchEndLeft(event) {
+        const controller = event.target;
+
+        if (controller.userData.selected !== undefined) {
+          const object = controller.userData.selected;
+          object.material.emissive.b = 0;
+          group.attach(object);
+
+          controller.userData.selected = undefined;
+          grabbing = false;
+        }
+
+        scaling.active = false;
+      }
+
+      function onPinchEndRight(event) {
+        const controller = event.target;
+
+        if (controller.userData.selected !== undefined) {
+          const object = controller.userData.selected;
+          object.material.emissive.b = 0;
+          group.attach(object);
+
+          controller.userData.selected = undefined;
+          grabbing = false;
+        }
+
+        scaling.active = false;
+      }
+      ////
+
+      function onSelectStart(event) {
+        const controller = event.target;
+
+        const intersections = getIntersections(controller);
+
+        if (intersections.length > 0) {
+          const intersection = intersections[0];
+
+          const object = intersection.object;
+          object.material.emissive.b = 1;
+          controller.attach(object);
+
+          controller.userData.selected = object;
+        }
+
+        controller.userData.targetRayMode = event.data.targetRayMode;
+      }
+
+      function onSelect(event) {}
+
+      function onSelectEnd(event) {
+        // Only act if there is a selected object
+        if (event.target.userData.selected !== undefined) {
+          let object = event.target.userData.selected;
+          object.material.emissive.b = 0;
+
+          // Check if the target mode is screen
+          if (event.data.targetRayMode === "screen") {
+            // Keep the object in its current world position on release
+            let worldPosition = new THREE.Vector3();
+            object.getWorldPosition(worldPosition);
+
+            // Detach from the controller and keep the object at the previous frame's world position
+            group.attach(object);
+            object.position.copy(worldPosition);
+
+            // Optional: store the world position for debugging
+            debug = worldPosition;
+          } else {
+            // Default behavior if not in "screen" mode (e.g., position relative to group)
+            let worldPosition = new THREE.Vector3();
+            object.getWorldPosition(worldPosition);
+            group.attach(object);
+            object.position.copy(group.worldToLocal(worldPosition));
+
+            // Optional: store the adjusted position for debugging
+            debug = object.position;
+          }
+
+          // Clear the selection
+          event.target.userData.selected = undefined;
+        }
+      }
+
+      function getIntersections(controller) {
+        controller.updateMatrixWorld();
+
+        raycaster2.setFromXRController(controller);
+
+        return raycaster2.intersectObjects(group.children, false);
+      }
+
+      function intersectObjects(controller) {
+        // Do not highlight in mobile-ar
+
+        if (controller.userData.targetRayMode === "screen") return;
+
+        // Do not highlight when already selected
+
+        if (controller.userData.selected !== undefined) return;
+
+        const line = controller.getObjectByName("line");
+        const intersections = getIntersections(controller);
+
+        if (intersections.length > 0) {
+          const intersection = intersections[0];
+
+          const object = intersection.object;
+          object.material.emissive.r = 1;
+          intersected.push(object);
+
+          line.scale.z = intersection.distance;
+        } else {
+          line.scale.z = 5;
+        }
+      }
+
+      function cleanIntersected() {
+        while (intersected.length) {
+          const object = intersected.pop();
+          object.material.emissive.r = 0;
+        }
+      }
+
+      function moveElectron(i) {
+        // Get the current electron
+        const electron = group.children[i];
+
+        // Ensure the electron has the required moveToX and moveToY properties
+        if (!("moveToX" in electron) || !("moveToY" in electron)) return;
+
+        // Get current and target positions
+        const currentX = electron.position.x;
+        const currentY = electron.position.y;
+        const currentZ = electron.position.z;
+
+        const targetX = electron.moveToX;
+        const targetY = electron.moveToY;
+        const targetZ = fixedZ; // Fixed target Z position
+
+        // Determine if the electron is close enough to snap to the target positions
+        const epsilon = 0.01;
+
+        // Move in the X direction
+        if (Math.abs(currentX - targetX) > epsilon) {
+          electron.position.x += (targetX > currentX ? 1 : -1) * 0.01;
+          // If close enough after moving, snap to the target X
+          if (Math.abs(electron.position.x - targetX) < epsilon) {
+            electron.position.x = targetX;
+          }
+        }
+
+        // Move in the Y direction
+        if (Math.abs(currentY - targetY) > epsilon) {
+          electron.position.y += (targetY > currentY ? 1 : -1) * 0.01;
+          // If close enough after moving, snap to the target Y
+          if (Math.abs(electron.position.y - targetY) < epsilon) {
+            electron.position.y = targetY;
+          }
+        }
+
+        // Move in the Z direction
+        if (Math.abs(currentZ - targetZ) > epsilon) {
+          electron.position.z += (targetZ > currentZ ? 1 : -1) * 0.01;
+          // If close enough after moving, snap to the fixed Z
+          if (Math.abs(electron.position.z - targetZ) < epsilon) {
+            electron.position.z = targetZ;
+          }
+        }
+
+        // Round the final positions to the nearest hundredth
+        electron.position.x = Math.round(electron.position.x * 100) / 100;
+        electron.position.y = Math.round(electron.position.y * 100) / 100;
+        electron.position.z = Math.round(electron.position.z * 100) / 100;
+      }
+
+      function moveCore(i, corePos) {
+        let count = neutronCount + protonCount;
+        if (count === 0) {
+          positionOccupiedCore[0] = false;
+        }
+        for (let j = 0; j < count; j++) {
+          positionOccupiedCore[j] = true;
+        }
+        for (let j = count; j < 20; j++) {
+          positionOccupiedCore[j] = false;
+        }
+
+        // Get the current particle
+        const particle = group.children[i];
+        if (count == "1") {
+          particle.moveToX = core1[corePos].x;
+          particle.moveToY = core1[corePos].y;
+          particle.moveToZ = core5[corePos].z;
+          //console.log("Count 1");
+        } else if (count === 2) {
+          particle.moveToX = core2[corePos].x;
+          particle.moveToY = core2[corePos].y;
+          particle.moveToZ = core5[corePos].z;
+          //console.log("Count 2");
+        } else if (count === 3) {
+          particle.moveToX = core3[corePos].x;
+          particle.moveToY = core3[corePos].y;
+          particle.moveToZ = core5[corePos].z;
+          //console.log("Count 3");
+        } else if (count === 4) {
+          particle.moveToX = core4[corePos].x;
+          particle.moveToY = core4[corePos].y;
+          particle.moveToZ = core5[corePos].z;
+          //console.log("Count 4");
+        } else {
+          particle.moveToX = core5[corePos].x;
+          particle.moveToY = core5[corePos].y;
+          particle.moveToZ = core5[corePos].z;
+          //console.log("Count 5+");
+        }
+
+        // Ensure the particle has the required moveToX and moveToY properties
+        if (!("moveToX" in particle) || !("moveToY" in particle)) return;
+
+        // Get current and target positions
+        const unstable = new THREE.Vector3(
+          (Math.random() - 0.5) * 0.1, // x value between -0.05 and 0.05
+          (Math.random() - 0.5) * 0.1, // y value between -0.05 and 0.05
+          (Math.random() - 0.5) * 0.1 // z value between -0.05 and 0.05
+        );
+        const currentX = particle.position.x + (stableValue ? 0 : unstable.x);
+        const currentY = particle.position.y + (stableValue ? 0 : unstable.y);
+        const currentZ = particle.position.z + (stableValue ? 0 : unstable.z);
+
+        const targetX = particle.moveToX;
+        const targetY = particle.moveToY;
+        const targetZ = particle.moveToZ; // Fixed target Z position
+
+        // Determine if the particle is close enough to snap to the target positions
+        const epsilon = 0.01;
+
+        // Move in the X direction
+        if (Math.abs(currentX - targetX) > epsilon) {
+          particle.position.x += (targetX > currentX ? 1 : -1) * 0.01;
+          // If close enough after moving, snap to the target X
+          if (Math.abs(particle.position.x - targetX) < epsilon) {
+            particle.position.x = targetX;
+          }
+        }
+
+        // Move in the Y direction
+        if (Math.abs(currentY - targetY) > epsilon) {
+          particle.position.y += (targetY > currentY ? 1 : -1) * 0.01;
+          // If close enough after moving, snap to the target Y
+          if (Math.abs(particle.position.y - targetY) < epsilon) {
+            particle.position.y = targetY;
+          }
+        }
+
+        // Move in the Z direction
+        if (Math.abs(currentZ - targetZ) > epsilon) {
+          particle.position.z += (targetZ > currentZ ? 1 : -1) * 0.01;
+          // If close enough after moving, snap to the fixed Z
+          if (Math.abs(particle.position.z - targetZ) < epsilon) {
+            particle.position.z = targetZ;
+          }
+        }
+
+        // Round the final positions to the nearest hundredth
+        particle.position.x = Math.round(particle.position.x * 100) / 100;
+        particle.position.y = Math.round(particle.position.y * 100) / 100;
+        particle.position.z = Math.round(particle.position.z * 100) / 100;
+      }
+
+      function moveCore2(i) {
+        let count = neutronCount + protonCount;
+        if (count === 0) {
+          positionOccupiedCore[0] = false;
+        }
+        for (let j = 0; j < count; j++) {
+          positionOccupiedCore[j] = true;
+        }
+        for (let j = count; j < 20; j++) {
+          positionOccupiedCore[j] = false;
+        }
+
+        // Get the current particle
+        const particle = group.children[i];
+        //console.log(particle);
+
+        // Ensure the particle has the required moveToX and moveToY properties
+        // if (!("moveToX" in particle) || !("moveToY" in particle)) return;
+
+        // Get current and target positions
+        const currentX = particle.position.x;
+        const currentY = particle.position.y;
+        const currentZ = particle.position.z;
+
+        const targetX = particle.moveToX;
+        const targetY = particle.moveToY;
+        const targetZ = fixedZ; // Fixed target Z position
+
+        // Determine if the particle is close enough to snap to the target positions
+        const epsilon = 0.01;
+
+        // Move in the X direction
+        if (Math.abs(currentX - targetX) > epsilon) {
+          particle.position.x += (targetX > currentX ? 1 : -1) * 0.01;
+          // If close enough after moving, snap to the target X
+          if (Math.abs(particle.position.x - targetX) < epsilon) {
+            particle.position.x = targetX;
+          }
+        }
+
+        // Move in the Y direction
+        if (Math.abs(currentY - targetY) > epsilon) {
+          particle.position.y += (targetY > currentY ? 1 : -1) * 0.01;
+          // If close enough after moving, snap to the target Y
+          if (Math.abs(particle.position.y - targetY) < epsilon) {
+            particle.position.y = targetY;
+          }
+        }
+
+        // Move in the Z direction
+        if (Math.abs(currentZ - targetZ) > epsilon) {
+          particle.position.z += (targetZ > currentZ ? 1 : -1) * 0.01;
+          // If close enough after moving, snap to the fixed Z
+          if (Math.abs(particle.position.z - targetZ) < epsilon) {
+            particle.position.z = targetZ;
+          }
+        }
+
+        // Round the final positions to the nearest hundredth
+        particle.position.x = Math.round(particle.position.x * 100) / 100;
+        particle.position.y = Math.round(particle.position.y * 100) / 100;
+        particle.position.z = Math.round(particle.position.z * 100) / 100;
+      }
+
+      function isWithinRadius(x, y, name) {
+        const centerX = 0;
+        const centerY = 1.5;
+        let radius;
+        if (name == "electron") {
+          radius = 0.51;
+        } else if (name == "proton") {
+          radius = 0.35;
+        } else if (name == "neutron") {
+          radius = 0.35;
+        }
+        const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+
+        return distance <= radius;
+      }
+
+      function checkAtom() {
+        //Reset the count for each particle
+        electronCount = 0;
+        neutronCount = 0;
+        protonCount = 0;
+
+        //check the group for any particles within the radius of the outer valance level
+        for (let i = 0; i < group.children.length; i++) {
+          if (
+            isWithinRadius(
+              group.children[i].position.x,
+              group.children[i].position.y,
+              group.children[i].name
+            )
+          ) {
+            if (group.children[i].name == "electron") {
+              electronCount++;
+            } else if (group.children[i].name == "neutron") {
+              neutronCount++;
+            } else if (group.children[i].name == "proton") {
+              protonCount++;
+            }
+            //Check to see if the particle is already active, if not, assign a moveTo position
+            if (group.children[i].active == false) {
+              group.children[i].active = true;
+              assignMoveTo(i);
+            }
+          } else {
+            group.children[i].active = false;
+            group.children[i].moveToX = group.children[i].homeX;
+            group.children[i].moveToY = group.children[i].homeY;
+            let assignedIndex = group.children[i].assignedIndex;
+            positionOccupied[assignedIndex] = false;
+            group.children[i].assignedIndex = false;
+          }
+        }
+
+        updateText();
+
+        if (electronCount >= 2) {
+          // Check if position 1 or 2 is empty
+          if (!positionOccupied[0] || !positionOccupied[1]) {
+            // Determine which of position 1 or 2 is available
+            const availablePositionIndex = !positionOccupied[0] ? 0 : 1;
+            const availablePosition = positions[availablePositionIndex];
+            //console.log(positionOccupied);
+            //console.log(
+            //  "Position index " + availablePositionIndex + " is available."
+            //);
+            let closestElectron = null;
+            let minDistance = Infinity;
+            let closestElectronIndex = -1;
+
+            // Find the closest electron that is not in position 1 or 2
+            for (let i = 0; i < group.children.length; i++) {
+              const electron = group.children[i];
+
+              // Skip if the electron is already in position 1 or 2
+              if (
+                electron.position.equals(positions[0]) ||
+                electron.position.equals(positions[1])
+              ) {
+                continue;
+              }
+
+              // Calculate distance from this electron to the available position
+              const distance = electron.position.distanceTo(availablePosition);
+
+              // Update the closest electron if this one is closer
+              if (distance < minDistance && electron.assignedIndex) {
+                minDistance = distance;
+                closestElectron = electron;
+                closestElectronIndex = i;
+              }
+            }
+
+            // If a closest electron is found, update its moveToX and moveToY and mark the position as occupied
+            if (closestElectron) {
+              //console.log(closestElectron);
+              let pos = closestElectron.assignedIndex;
+
+              //console.log(pos);
+              positionOccupied[pos] = false;
+              closestElectron.moveToX = availablePosition.x;
+              closestElectron.moveToY = availablePosition.y;
+              // Update the positionOccupied array to mark the available position as occupied
+              positionOccupied[availablePositionIndex] = true;
+              closestElectron.assignedIndex = availablePositionIndex;
+            }
+          }
+        }
+
+        oldElectronCount = electronCount;
+        oldNeutronCount = neutronCount;
+        oldProtonCount = protonCount;
+        something();
+      }
+
+      function something() {
+        for (let i = 0; i < group.children.length; i++) {
+          if (group.children[i].name == "electron") {
+            if (
+              group.children[i].position.x != group.children[i].moveToX ||
+              group.children[i].position.y != group.children[i].moveToY ||
+              group.children[i].position.z != fixedZ
+            ) {
+              //console.log("Moving electron number " + i);
+              //console.log(group.children[i].position);
+              moveElectron(i);
+            }
+          } else if (
+            group.children[i].name == "neutron" ||
+            group.children[i].name == "proton"
+          ) {
+            if (
+              isWithinRadius(
+                group.children[i].position.x,
+                group.children[i].position.y,
+                group.children[i].name
+              )
+            ) {
+              corePosition++;
+              moveCore(i, corePosition);
+            }
+
+            if (
+              !isWithinRadius(
+                group.children[i].position.x,
+                group.children[i].position.y,
+                group.children[i].name
+              )
+            ) {
+              //console.log("Not in radius");
+              group.children[i].moveToX = group.children[i].homeX;
+              group.children[i].moveToY = group.children[i].homeY;
+              group.children[i].moveToZ = fixedZ;
+              moveCore2(i);
+            }
+          }
+          //Reset corePosition for next frame
+        }
+        corePosition = -1;
+      }
+
+      function assignMoveTo(i) {
+        let assignedIndex = -1;
+        if (group.children[i].name === "electron") {
+          // Check distances to positions 1 and 2 first
+          const distanceToPosition1 = group.children[i].position.distanceTo(
+            positions[0]
+          );
+          const distanceToPosition2 = group.children[i].position.distanceTo(
+            positions[1]
+          );
+
+          if (!positionOccupied[0] && !positionOccupied[1]) {
+            // If both are available, choose the closer one
+            assignedIndex = distanceToPosition1 < distanceToPosition2 ? 0 : 1;
+          } else if (
+            !positionOccupied[0] &&
+            distanceToPosition1 <= distanceToPosition2
+          ) {
+            // If only position 1 is available and it's closer or equal
+            assignedIndex = 0;
+          } else if (
+            !positionOccupied[1] &&
+            distanceToPosition2 < distanceToPosition1
+          ) {
+            // If only position 2 is available and it's closer
+            assignedIndex = 1;
+          } else {
+            // If both positions 1 and 2 are occupied, find the closest available position from 3-10
+            let minDistance = Infinity;
+            for (let j = 2; j < positions.length; j++) {
+              if (!positionOccupied[j]) {
+                const distance = group.children[i].position.distanceTo(
+                  positions[j]
+                );
+                if (distance < minDistance) {
+                  minDistance = distance;
+                  assignedIndex = j;
+                }
+              }
+            }
+          }
+
+          // If we found a valid position, assign the electron and mark it as occupied
+          if (assignedIndex !== -1) {
+            //group.children[i].position.copy(positions[assignedIndex]);
+            group.children[i].moveToX = positions[assignedIndex].x;
+            group.children[i].moveToY = positions[assignedIndex].y;
+            positionOccupied[assignedIndex] = true;
+            group.children[i].assignedIndex = assignedIndex;
+          }
+        }
+      }
+
+      function createText(message, height, color) {
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        let metrics = null;
+        const textHeight = 100;
+        context.font = "normal " + textHeight + "px Arial";
+        metrics = context.measureText(message);
+        const textWidth = metrics.width;
+        canvas.width = textWidth;
+        canvas.height = textHeight;
+        context.font = "normal " + textHeight + "px Arial";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillStyle = "#ffffff";
+        context.fillText(message, textWidth / 2, textHeight / 2);
+
+        const texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+
+        const material = new THREE.MeshBasicMaterial({
+          color: color,
+          side: THREE.DoubleSide,
+          map: texture,
+          transparent: true,
+        });
+        const geometry = new THREE.PlaneGeometry(
+          (height * textWidth) / textHeight,
+          height
+        );
+        const plane = new THREE.Mesh(geometry, material);
+        return plane;
+      }
+
+      function updateText() {
+        if (protonCount !== oldProtonCount) {
+          // Remove old text if it exists
+          if (showElement) {
+          disposeText(text);
+
+          const elements = {
+            1: "Hydrogen",
+            2: "Helium",
+            3: "Lithium",
+            4: "Beryllium",
+            5: "Boron",
+            6: "Carbon",
+            7: "Nitrogen",
+            8: "Oxygen",
+            9: "Fluorine",
+            10: "Neon",
+          };
+
+          const textHeight = 1.7;
+          const elementName = elements[protonCount] || "X";
+          const textSize = protonCount > 10 ? 0.2 : 0.1;
+
+          if (elementName === "X") {
+            text = createText(elementName, 0.2, 0xfc8803);
+            text.position.set(0, 1.5, -1.5);
+          } else {
+            if (elementTextType == 0) {
+            text = createText(elementName, textSize, 0xfc8803);
+            text.position.set(0, textHeight, -1.5);
+            } else {
+                        text = createText(elementName, 0.08, 0x000000);
+            text.position.set(0.82, textHeight-0.25, -1.5);
+          }
+          }
+          scene.add(text);
+          }
+        }
+
+        if (
+          protonCount !== oldProtonCount ||
+          electronCount !== oldElectronCount
+        ) {
+          if (showIon){
+          // Remove old ion text if it exists
+          disposeText(textIon);
+
+          let ionCount = protonCount - electronCount;
+          if (ionCount === 0) {
+            if (electronCount === 0) {
+              textIon = createText("", 0.1, neutronTextColor);
+            } else {
+              textIon = createText("Neutral Atom", 0.1, neutronTextColor);
+            }
+          } else {
+            const ionText = ionCount < 0 ? "- Ion" : "+ Ion";
+            const ionColor = ionCount < 0 ? 0x0000ff : 0xff0000;
+            textIon = createText(ionText, 0.1, ionColor);
+          }
+
+          if (ionCount) {
+            textIon.position.set(0.4, 2.0, -1.5);
+          } else {
+            textIon.position.set(0.58, 2.0, -1.5);
+          }
+          scene.add(textIon);
+        }
+        }
+
+        if (
+          protonCount !== oldProtonCount ||
+          neutronCount !== oldNeutronCount
+        ) {
+          if (showStable){
+          // Remove old stability text if it exists
+          disposeText(textStable);
+
+          const stableConfigurations = {
+            0: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            1: [0, 1],
+            2: [1, 2],
+            3: [3, 4],
+            4: [5],
+            5: [5, 6],
+            6: [6, 7],
+            7: [7, 8],
+            8: [8, 9, 10],
+            9: [10],
+            10: [10, 11, 12],
+          };
+
+          const isStable =
+            stableConfigurations[protonCount]?.includes(neutronCount);
+          let stabilityText;
+          if (protonCount > 0) {
+            stabilityText = isStable ? "Stable" : "Unstable";
+          } else {
+            stabilityText = "";
+          }
+          const textColor = neutronTextColor;
+
+          textStable = createText(stabilityText, 0.1, textColor);
+          stableValue = !!isStable;
+          textStable.position.set(0, 1.25, -1.5);
+          scene.add(textStable);
+        }
+        }
+        if (
+          protonCount !== oldProtonCount ||
+          neutronCount !== oldNeutronCount ||
+          electronCount !== oldElectronCount
+        ) {
+          disposeText(textProtons);
+          textProtons = createText("Protons: " + protonCount, 0.1, 0xff0000);
+                    textProtons.position.set(-0.7, 2.1, -1.5);
+          scene.add(textProtons);
+
+          disposeText(textNeutrons);
+          textNeutrons = createText("Neutrons: " + neutronCount, 0.1, neutronTextColor);
+                    textNeutrons.position.set(-0.73, 2, -1.5);
+          scene.add(textNeutrons);
+
+          disposeText(textElectrons);
+          textElectrons = createText(
+            "Electrons: " + electronCount,
+            0.1,
+            0x0000ff
+          );
+                    textElectrons.position.set(-0.735, 1.9, -1.5);
+          scene.add(textElectrons);
+          
+          if (renderer.xr.isPresenting) {
+            if (showDebug) {
+              disposeText(textDebug);
+              console.log(debug);
+              textDebug = createText(
+                "X: " + debug.x + " Y: " + debug.y + " Z: " + debug.z,
+                0.12,
+                0x0000ff
+              );
+              textDebug.position.set(-0.8, 2.44, -1.3);
+              scene.add(textDebug);
+            }
+          }
+
+
+if (showSymbol) {
+          disposeText(textSymbolLetter);
+          disposeText(textSymbolProtons);
+          disposeText(textSymbolWeight);
+          disposeText(textSymbolCharge);
+
+          let ionCount = protonCount - electronCount;
+          const elements = {
+            1: "H",
+            2: "He",
+            3: "Li",
+            4: "Be",
+            5: "B",
+            6: "C",
+            7: "N",
+            8: "O",
+            9: "F",
+            10: "Ne",
+          };
+          const elementName = elements[protonCount] || "";
+
+    if (elementTextType == 0 ) {
+          textSymbolLetter = createText(elementName, 0.25, 0x000000);
+          textSymbolLetter.position.set(0.81, 1.55, -1.5);
+          scene.add(textSymbolLetter);
+    } else {
+                textSymbolLetter = createText(elementName, 0.25, 0x000000);
+          textSymbolLetter.position.set(0.81, 1.58, -1.5);
+          scene.add(textSymbolLetter);
+    }
+          
+  textSymbolProtons = createText(protonCount, 0.12, 0xff0000);
+          textSymbolProtons.position.set(0.66, 1.35, -1.5);
+          scene.add(textSymbolProtons);
+          textSymbolWeight = createText(
+            protonCount + neutronCount,
+            0.12,
+            0x000000
+          );
+          textSymbolWeight.position.set(0.66, 1.75, -1.5);
+          scene.add(textSymbolWeight);
+          if (ionCount === 0) {
+            textSymbolCharge = createText(ionCount, 0.12, 0x000000);
+          } else if (ionCount >= 0) {
+            textSymbolCharge = createText(ionCount + "+", 0.12, 0xff0000);
+          } else {
+            textSymbolCharge = createText(
+              Math.abs(ionCount) + "-",
+              0.12,
+              0x0000ff
+            );
+          }
+          textSymbolCharge.position.set(0.95, 1.75, -1.5);
+          scene.add(textSymbolCharge);
+        }
+        }
+      }
+
+      // Helper function to dispose and remove text objects
+      function disposeText(textObject) {
+        if (textObject) {
+          textObject.material.dispose();
+          textObject.geometry.dispose();
+          scene.remove(textObject);
+        }
+      }
+
+      // Update previous position each frame
+      function updateControllerPosition(controller) {
+        if (controller.userData.selected !== undefined) {
+          previousPosition.set(controller.position);
+        }
+        //debug = controller.position;
+        if (showDebug){
+        disposeText(textDebug);
+        //console.log(debug);
+        textDebug = createText(
+          "X: " + debug.x + " Y: " + debug.y + " Z: " + debug.z,
+          0.12,
+          0x0000ff
+        );
+        textDebug.position.set(-0.8, 2.44, -1.3);
+        scene.add(textDebug);
+      }
+      }
+
+      function render() {
+        if (renderer.xr.isPresenting) {
+          controls.enabled = false;
+        }
+        if (controls.state == -1) {
+          checkAtom();
+        }
+
+        if (scaling.active) {
+          const indexTip1Pos = hand1.joints["index-finger-tip"].position;
+          const indexTip2Pos = hand2.joints["index-finger-tip"].position;
+          const distance = indexTip1Pos.distanceTo(indexTip2Pos);
+          const newScale =
+            scaling.initialScale + distance / scaling.initialDistance - 1;
+          scaling.object.scale.setScalar(newScale);
+        }
+
+        updateControllerPosition(controller2); // Pass the controller object here
+
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>
