@@ -334,7 +334,7 @@ function init() {
     0.1,
     1000
   );
-  camera.position.set(0, 3, 1);
+  camera.position.set(0, 2, 1);
 
   // Renderer setup
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -349,7 +349,7 @@ function init() {
     new BoxLineGeometry(3, 3, 0, 10, 10, 10),
     new THREE.LineBasicMaterial({ color: 0x808080, linewidth: 2 })
   );
-  room.geometry.translate(0, 1.5, -1.5);
+  room.geometry.translate(0, 1.5, -2.5);
   scene.add(room);
 
   document.body.appendChild(
