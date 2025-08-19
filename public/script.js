@@ -1392,10 +1392,10 @@ function onMouseMove(event) {
                 bodies[planetIndex].velocity.y = handleOffset.y * velocityScale;
                 
                 // Update visualizations
-              //  if (!isPlaying) {
+                if (!isPlaying) {
                   updateVelocityArrows();
                   updateGravityArrows(bodies, bodyMeshes);
-             //   }
+                }
               }
             }
           }
@@ -1585,6 +1585,10 @@ function onTouchEnd(event) {
     onMouseUp(event, true);
     touchEnabled = false;
   }
+        
+  updateVelocityArrows();
+  updateGravityArrows(bodies, bodyMeshes);
+                
 }
 
 // Helper function to handle object interactions
