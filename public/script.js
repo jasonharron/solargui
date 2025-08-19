@@ -84,7 +84,6 @@ const scaling = {
 
 const spheres = [];
 
-//Commented out to disable socket.io
 //let socket = io();
 
 // Load texture for Clear button
@@ -121,7 +120,7 @@ const pauseTexture = loader.load(
 init();
 
 function init() {
- /*
+  /*
   socket.on("userSelect", function (data) {
     userSelect = data;
   })
@@ -320,7 +319,8 @@ function init() {
       }
     });
   });
-*/
+  */
+
   container = document.createElement("div");
   document.body.appendChild(container);
   // Scene setup
@@ -1319,12 +1319,13 @@ function onMouseMove(event) {
             updateMassText(selectedObject.index);
             
             // Notify other connected clients
-            
-           // socket.emit("slider", {
-            //  index: selectedObject.index,
-            //  mass: bodies[selectedObject.index].mass,
-           // });
-         // } else {
+            /*
+            socket.emit("slider", {
+              index: selectedObject.index,
+              mass: bodies[selectedObject.index].mass,
+            });
+            */
+          } else {
             // For planets and handles, update both x and y, but keep z unchanged
             intersectionPoint.z = selectedObject.position.z;
             
@@ -1350,8 +1351,8 @@ function onMouseMove(event) {
                 }
                 
                 // Notify other connected clients
-                //socket.emit("clearTrail", planetIndex);
                 /*
+                socket.emit("clearTrail", planetIndex);
                 socket.emit(
                   "updateBodiesAndMeshes",
                   bodies.map((body, index) => ({
@@ -1396,7 +1397,7 @@ function onMouseMove(event) {
                 }
               }
             }
-          //}
+          }
         }
       }
     }
@@ -1436,7 +1437,7 @@ function onMouseUp(event) {
     isDragging = false;
     select = false;
     deselect = true;
-    //socket.emit("userSelect", false);
+   // socket.emit("userSelect", false);
     selectedObject = null;
   } else {
     // If we didn't interact with any object, make sure orbit controls are enabled
@@ -1505,13 +1506,12 @@ function onTouchMove(event) {
               bodies[selectedObject.index].mass = newMass;
               updateMassText(selectedObject.index);
               
-            /*
-              socket.emit("slider", {
+             /* socket.emit("slider", {
                 index: selectedObject.index,
                 mass: bodies[selectedObject.index].mass,
               });
-            } else {
               */
+            } else {
               // Handle planets and handle objects same as in mouse move
               intersectionPoint.z = selectedObject.position.z;
               selectedObject.position.copy(intersectionPoint);
@@ -1529,6 +1529,7 @@ function onTouchMove(event) {
                     updateGravityArrows(bodies, bodyMeshes);
                     updatePlayPosition();
                   }
+                  
                   /*
                   socket.emit("clearTrail", planetIndex);
                   socket.emit(
@@ -1569,7 +1570,7 @@ function onTouchMove(event) {
                   }
                 }
               }
-            //}
+            }
           }
         }
       }
@@ -1596,7 +1597,7 @@ function handleObjectInteraction(object) {
       isPlaying = true;
     }
     togglePlayPauseTexture(isPlaying);
-    //.emit("play", isPlaying);
+   // socket.emit("play", isPlaying);
   }
   
   if (object.name === "Reset") {
@@ -1610,7 +1611,7 @@ function handleObjectInteraction(object) {
     rewind = true;
     deselect = false;
     resetBodies(false, true);
-  //  socket.emit("rewind", rewind);
+   // socket.emit("rewind", rewind);
   }
   
   if (object.name === "StepForward") {
@@ -1621,7 +1622,7 @@ function handleObjectInteraction(object) {
     bodyMeshes.forEach(({ body, mesh }, index) => {
       clearTrail(index);
     });
-    //socket.emit("clearTrails", true);
+   // socket.emit("clearTrails", true);
   }
   
   if (object.name === "Slow") {
@@ -1633,7 +1634,7 @@ function handleObjectInteraction(object) {
   if (object.name === "Normal") {
     TIMESTEP = normal;
     updateSpeedButtonColors();
-   // socket.emit("normal", true);
+  //  socket.emit("normal", true);
   }
   
   if (object.name === "Fast") {
@@ -1649,7 +1650,7 @@ function handleObjectInteraction(object) {
   
   if (object.name === "BodiesUp") {
     addBody();
-  //  socket.emit("bodiesUp", true);
+   // socket.emit("bodiesUp", true);
   }
   
   if (object.name === "Slider") {
@@ -1665,7 +1666,7 @@ function handleObjectInteraction(object) {
     updateMassText(object.index);
     updatePlayPosition();
     sliderSelect = false;
-   /*
+    /*
     socket.emit("slider", {
       index: object.index,
       mass: bodies[object.index].mass,
@@ -1681,6 +1682,7 @@ function handleObjectInteraction(object) {
       bodies[object.index].mass = Math.round(bodies[object.index].mass);
     }
     updateMassText(object.index);
+    
     /*
     socket.emit("down", {
       index: object.index,
@@ -1697,6 +1699,7 @@ function handleObjectInteraction(object) {
       bodies[object.index].mass = Math.round(bodies[object.index].mass);
     }
     updateMassText(object.index);
+    
     /*
     socket.emit("up", {
       index: object.index,
@@ -1714,8 +1717,8 @@ function handleObjectInteraction(object) {
       updateGravityArrows(bodies, bodyMeshes);
       updatePlayPosition();
     }
-    
-    /*socket.emit(
+    /*
+    socket.emit(
       "updateBodiesAndMeshes",
       bodies.map((body, index) => ({
         position: {
@@ -1860,7 +1863,7 @@ function onSelectEnd(event) {
         }
 
         togglePlayPauseTexture(isPlaying);
-        //socket.emit("play", isPlaying);
+       // socket.emit("play", isPlaying);
       }
 
       if (object.name == "Reset") {
@@ -1874,7 +1877,7 @@ function onSelectEnd(event) {
         rewind = true;
         deselect = false;
         resetBodies(false, true);
-       //socket.emit("rewind", rewind);
+       // socket.emit("rewind", rewind);
       }
 
       if (object.name == "StepForward") {
@@ -1899,12 +1902,12 @@ function onSelectEnd(event) {
       if (object.name == "Fast") {
         TIMESTEP = fast;
         updateSpeedButtonColors();
-      //  socket.emit("fast", true);
+       // socket.emit("fast", true);
       }
 
       if (object.name == "BodiesDown") {
         removeBody();
-      //  socket.emit("bodiesDown", true);
+       // socket.emit("bodiesDown", true);
       }
 
       if (object.name == "BodiesUp") {
@@ -2021,7 +2024,6 @@ function onSelectEnd(event) {
         }
         updateMassText(object.index);
 
-       
         /*
         socket.emit("up", {
           index: object.index,
@@ -2039,7 +2041,7 @@ function onSelectEnd(event) {
 
     controller.userData.selected = undefined;
     }
-    //emit("userSelect", false);
+    // socket.emit("userSelect", false);
   }
 //  }
 
@@ -2225,7 +2227,7 @@ function onSelectEnd(event) {
       //reset = true;
       //     resetBodies(true, false);
       resetBodies(false, true);
-    //  socket.emit("rewind", true);
+     // socket.emit("rewind", true);
     }
   });
 
@@ -2376,7 +2378,7 @@ function onSelectEnd(event) {
     play = false;
     isPlaying = false;
     togglePlayPauseTexture(isPlaying);
-   // socket.emit("play", isPlaying);
+    //socket.emit("play", isPlaying);
 
     //
     bodyMeshes.forEach(({ body, mesh }, index) => {
@@ -2469,7 +2471,7 @@ function onSelectEnd(event) {
     });
 
     // Emit the body and mesh data after updating everything
-   /*
+    /*
     socket.emit(
       "updateBodiesAndMeshes",
       bodies.map((body, index) => ({
@@ -2925,7 +2927,7 @@ function onSelectEnd(event) {
         selected.position.x = clampedX;
       }
       updateMassText(selected.index);
-     /*
+      /*
       socket.emit("sliderSelect", {
         x: selected.position.x,
         index: selected.index,
@@ -3009,7 +3011,7 @@ function render() {
       }
       if (!select && play) {
         updateBodies(); // Runs at 60Hz
-        /*
+       /*
         socket.emit(
           "updateBodiesAndMeshes",
           bodies.map((body, index) => ({
