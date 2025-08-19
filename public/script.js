@@ -1449,14 +1449,14 @@ function onMouseUp(event) {
 
 // Touch event handlers - adapt mouse events for touch
 function onTouchStart(event) {
-  event.preventDefault();
+  //event.preventDefault();
   touchEnabled = true;
   onMouseDown(event, true);
 }
 
 // Modify the touch move handler to use the same functionality
 function onTouchMove(event) {
-  event.preventDefault();
+  //event.preventDefault();
   if (touchEnabled) {
     // For touch events, we need to update mouse coordinates differently
     const rect = renderer.domElement.getBoundingClientRect();
@@ -1580,7 +1580,7 @@ function onTouchMove(event) {
 }
 
 function onTouchEnd(event) {
-  event.preventDefault();
+ // event.preventDefault();
   if (touchEnabled) {
     onMouseUp(event, true);
     touchEnabled = false;
