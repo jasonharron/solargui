@@ -352,7 +352,7 @@ function init() {
   room.geometry.translate(0, 1.5, -1.5);
   scene.add(room);
 
-  container.body.appendChild(
+  container.appendChild(
     XRButton.createButton(renderer, {
       requiredFeatures: ["hit-test", "local-floor"],
       optionalFeatures: [
