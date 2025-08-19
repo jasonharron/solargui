@@ -349,7 +349,7 @@ function init() {
     new BoxLineGeometry(3, 3, 0, 10, 10, 10),
     new THREE.LineBasicMaterial({ color: 0x808080, linewidth: 2 })
   );
-  room.geometry.translate(0, 1.5, -1.5);
+  room.geometry.translate(0, 2.5, -1.5);
   scene.add(room);
 
   document.body.appendChild(
@@ -1580,7 +1580,7 @@ function onTouchMove(event) {
 }
 
 function onTouchEnd(event) {
- // event.preventDefault();
+ //event.preventDefault();
   if (touchEnabled) {
     onMouseUp(event, true);
     touchEnabled = false;
