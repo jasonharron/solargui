@@ -352,7 +352,7 @@ function init() {
   room.geometry.translate(0, 1.5, -1.5);
   scene.add(room);
 
-  container.appendChild(
+  document.body.appendChild(
     XRButton.createButton(renderer, {
       requiredFeatures: ["hit-test", "local-floor"],
       optionalFeatures: [
@@ -984,15 +984,16 @@ function init() {
 
   scene.add(controller2);
   
-  // Add mouse event listeners
-document.addEventListener('mousedown', onMouseDown);
-document.addEventListener('mousemove', onMouseMove);
-document.addEventListener('mouseup', onMouseUp);
 
 // Add touch event listeners
 document.addEventListener('touchstart', onTouchStart, { passive: false });
 document.addEventListener('touchmove', onTouchMove, { passive: false });
 document.addEventListener('touchend', onTouchEnd);
+
+  // Add mouse event listeners
+document.addEventListener('mousedown', onMouseDown);
+document.addEventListener('mousemove', onMouseMove);
+document.addEventListener('mouseup', onMouseUp);
 
   window.addEventListener("resize", onWindowResize);
 
