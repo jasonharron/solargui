@@ -84,7 +84,8 @@ const scaling = {
 
 const spheres = [];
 
-let socket = io();
+//Commented out to disable socket.io
+//let socket = io();
 
 // Load texture for Clear button
 const loader = new THREE.TextureLoader();
@@ -120,6 +121,7 @@ const pauseTexture = loader.load(
 init();
 
 function init() {
+ /*
   socket.on("userSelect", function (data) {
     userSelect = data;
   })
@@ -318,7 +320,7 @@ function init() {
       }
     });
   });
-
+*/
   container = document.createElement("div");
   document.body.appendChild(container);
   // Scene setup
@@ -1209,7 +1211,7 @@ function onMouseDown(event, isTouch) {
     controls.enabled = false;
     
     select = true;
-    socket.emit("userSelect", true);
+    //socket.emit("userSelect", true);
     fakeController.userData.selected = object;
     selectedObject = object;
     isDragging = true;
@@ -1317,11 +1319,12 @@ function onMouseMove(event) {
             updateMassText(selectedObject.index);
             
             // Notify other connected clients
-            socket.emit("slider", {
-              index: selectedObject.index,
-              mass: bodies[selectedObject.index].mass,
-            });
-          } else {
+            
+           // socket.emit("slider", {
+            //  index: selectedObject.index,
+            //  mass: bodies[selectedObject.index].mass,
+           // });
+         // } else {
             // For planets and handles, update both x and y, but keep z unchanged
             intersectionPoint.z = selectedObject.position.z;
             
@@ -1347,7 +1350,8 @@ function onMouseMove(event) {
                 }
                 
                 // Notify other connected clients
-                socket.emit("clearTrail", planetIndex);
+                //socket.emit("clearTrail", planetIndex);
+                /*
                 socket.emit(
                   "updateBodiesAndMeshes",
                   bodies.map((body, index) => ({
@@ -1366,6 +1370,7 @@ function onMouseMove(event) {
                     },
                   }))
                 );
+                */
               }
             }
             
@@ -1391,7 +1396,7 @@ function onMouseMove(event) {
                 }
               }
             }
-          }
+          //}
         }
       }
     }
@@ -1431,7 +1436,7 @@ function onMouseUp(event) {
     isDragging = false;
     select = false;
     deselect = true;
-    socket.emit("userSelect", false);
+    //socket.emit("userSelect", false);
     selectedObject = null;
   } else {
     // If we didn't interact with any object, make sure orbit controls are enabled
@@ -1500,11 +1505,13 @@ function onTouchMove(event) {
               bodies[selectedObject.index].mass = newMass;
               updateMassText(selectedObject.index);
               
+            /*
               socket.emit("slider", {
                 index: selectedObject.index,
                 mass: bodies[selectedObject.index].mass,
               });
             } else {
+              */
               // Handle planets and handle objects same as in mouse move
               intersectionPoint.z = selectedObject.position.z;
               selectedObject.position.copy(intersectionPoint);
@@ -1522,7 +1529,7 @@ function onTouchMove(event) {
                     updateGravityArrows(bodies, bodyMeshes);
                     updatePlayPosition();
                   }
-                  
+                  /*
                   socket.emit("clearTrail", planetIndex);
                   socket.emit(
                     "updateBodiesAndMeshes",
@@ -1542,6 +1549,7 @@ function onTouchMove(event) {
                       },
                     }))
                   );
+                  */
                 }
               }
               
@@ -1561,7 +1569,7 @@ function onTouchMove(event) {
                   }
                 }
               }
-            }
+            //}
           }
         }
       }
@@ -1588,21 +1596,21 @@ function handleObjectInteraction(object) {
       isPlaying = true;
     }
     togglePlayPauseTexture(isPlaying);
-    socket.emit("play", isPlaying);
+    //.emit("play", isPlaying);
   }
   
   if (object.name === "Reset") {
     reset = true;
     deselect = false;
     resetBodies(true, false);
-    socket.emit("reset", reset);
+   // socket.emit("reset", reset);
   }
   
   if (object.name === "Rewind") {
     rewind = true;
     deselect = false;
     resetBodies(false, true);
-    socket.emit("rewind", rewind);
+  //  socket.emit("rewind", rewind);
   }
   
   if (object.name === "StepForward") {
@@ -1613,35 +1621,35 @@ function handleObjectInteraction(object) {
     bodyMeshes.forEach(({ body, mesh }, index) => {
       clearTrail(index);
     });
-    socket.emit("clearTrails", true);
+    //socket.emit("clearTrails", true);
   }
   
   if (object.name === "Slow") {
     TIMESTEP = slow;
     updateSpeedButtonColors();
-    socket.emit("slow", true);
+   // socket.emit("slow", true);
   }
   
   if (object.name === "Normal") {
     TIMESTEP = normal;
     updateSpeedButtonColors();
-    socket.emit("normal", true);
+   // socket.emit("normal", true);
   }
   
   if (object.name === "Fast") {
     TIMESTEP = fast;
     updateSpeedButtonColors();
-    socket.emit("fast", true);
+   // socket.emit("fast", true);
   }
   
   if (object.name === "BodiesDown") {
     removeBody();
-    socket.emit("bodiesDown", true);
+   // socket.emit("bodiesDown", true);
   }
   
   if (object.name === "BodiesUp") {
     addBody();
-    socket.emit("bodiesUp", true);
+  //  socket.emit("bodiesUp", true);
   }
   
   if (object.name === "Slider") {
@@ -1657,10 +1665,12 @@ function handleObjectInteraction(object) {
     updateMassText(object.index);
     updatePlayPosition();
     sliderSelect = false;
+   /*
     socket.emit("slider", {
       index: object.index,
       mass: bodies[object.index].mass,
     });
+    */
   }
   
   if (object.name === "Down") {
@@ -1671,11 +1681,12 @@ function handleObjectInteraction(object) {
       bodies[object.index].mass = Math.round(bodies[object.index].mass);
     }
     updateMassText(object.index);
-    
+    /*
     socket.emit("down", {
       index: object.index,
       mass: bodies[object.index].mass,
     });
+    */
   }
   
   if (object.name === "Up") {
@@ -1686,16 +1697,17 @@ function handleObjectInteraction(object) {
       bodies[object.index].mass = Math.round(bodies[object.index].mass);
     }
     updateMassText(object.index);
-    
+    /*
     socket.emit("up", {
       index: object.index,
       mass: bodies[object.index].mass,
     });
+    */
   }
   
   if (object.name === "Planet") {
     clearTrail(object.index);
-    socket.emit("clearTrail", object.index);
+    //socket.emit("clearTrail", object.index);
     
     if (!isPlaying) {
       updateVelocityArrows();
@@ -1703,7 +1715,7 @@ function handleObjectInteraction(object) {
       updatePlayPosition();
     }
     
-    socket.emit(
+    /*socket.emit(
       "updateBodiesAndMeshes",
       bodies.map((body, index) => ({
         position: {
@@ -1721,6 +1733,7 @@ function handleObjectInteraction(object) {
         },
       }))
     );
+    */
   }
 }
 
@@ -1786,7 +1799,7 @@ function onSelectStart(event) {
     controls.enabled = false;
 
     select = true;
-    socket.emit("userSelect", true);
+    //socket.emit("userSelect", true);
     controller.userData.selected = object;
   }
 
@@ -1847,21 +1860,21 @@ function onSelectEnd(event) {
         }
 
         togglePlayPauseTexture(isPlaying);
-        socket.emit("play", isPlaying);
+        //socket.emit("play", isPlaying);
       }
 
       if (object.name == "Reset") {
         reset = true;
         deselect = false;
         resetBodies(true, false);
-        socket.emit("reset", reset);
+       // socket.emit("reset", reset);
       }
 
       if (object.name == "Rewind") {
         rewind = true;
         deselect = false;
         resetBodies(false, true);
-        socket.emit("rewind", rewind);
+       //socket.emit("rewind", rewind);
       }
 
       if (object.name == "StepForward") {
@@ -1871,32 +1884,32 @@ function onSelectEnd(event) {
         bodyMeshes.forEach(({ body, mesh }, index) => {
           clearTrail(index);
         });
-        socket.emit("clearTrails", true);
+       // socket.emit("clearTrails", true);
       }
       if (object.name == "Slow") {
         TIMESTEP = slow;
         updateSpeedButtonColors();
-        socket.emit("slow", true);
+       // socket.emit("slow", true);
       }
       if (object.name == "Normal") {
         TIMESTEP = normal;
         updateSpeedButtonColors();
-        socket.emit("normal", true);
+       // socket.emit("normal", true);
       }
       if (object.name == "Fast") {
         TIMESTEP = fast;
         updateSpeedButtonColors();
-        socket.emit("fast", true);
+      //  socket.emit("fast", true);
       }
 
       if (object.name == "BodiesDown") {
         removeBody();
-        socket.emit("bodiesDown", true);
+      //  socket.emit("bodiesDown", true);
       }
 
       if (object.name == "BodiesUp") {
         addBody();
-        socket.emit("bodiesUp", true);
+      //  socket.emit("bodiesUp", true);
       }
 
       if (object.name == "Planet" || object.name == "Handle") {
@@ -1926,14 +1939,14 @@ function onSelectEnd(event) {
 
         if (object.name == "Planet") {
           clearTrail(object.index);
-          socket.emit("clearTrail", object.index);
+        //  socket.emit("clearTrail", object.index);
         }
 
         if (!isPlaying) {
           updateVelocityArrows();
           updateGravityArrows(bodies, bodyMeshes);
         }
-
+/*
         socket.emit(
           "updateBodiesAndMeshes",
           bodies.map((body, index) => ({
@@ -1952,6 +1965,7 @@ function onSelectEnd(event) {
             },
           }))
         );
+        */
         if (!isPlaying) {
   updatePlayPosition();
         }
@@ -1974,10 +1988,12 @@ function onSelectEnd(event) {
         updateMassText(object.index);
             updatePlayPosition();
         sliderSelect = false;
+        /*
         socket.emit("slider", {
           index: object.index,
           mass: bodies[object.index].mass,
         });
+        */
       }
 
       if (object.name == "Down") {
@@ -1988,11 +2004,12 @@ function onSelectEnd(event) {
           bodies[object.index].mass = Math.round(bodies[object.index].mass);
         }
         updateMassText(object.index);
-        
+        /*
         socket.emit("down", {
           index: object.index,
           mass: bodies[object.index].mass,
         });
+        */
       }
 
       if (object.name == "Up") {
@@ -2004,10 +2021,13 @@ function onSelectEnd(event) {
         }
         updateMassText(object.index);
 
+       
+        /*
         socket.emit("up", {
           index: object.index,
           mass: bodies[object.index].mass,
         });
+        */
       }
 
       bodyMeshes.forEach(({ body, mesh }, index) => {
@@ -2019,7 +2039,7 @@ function onSelectEnd(event) {
 
     controller.userData.selected = undefined;
     }
-      socket.emit("userSelect", false);
+    //emit("userSelect", false);
   }
 //  }
 
@@ -2194,7 +2214,7 @@ function onSelectEnd(event) {
         isPlaying = true;
       }
       togglePlayPauseTexture(isPlaying);
-      socket.emit("play", isPlaying);
+     // socket.emit("play", isPlaying);
       console.log("Play is now:", play);
     }
   });
@@ -2205,7 +2225,7 @@ function onSelectEnd(event) {
       //reset = true;
       //     resetBodies(true, false);
       resetBodies(false, true);
-      socket.emit("rewind", true);
+    //  socket.emit("rewind", true);
     }
   });
 
@@ -2356,7 +2376,7 @@ function onSelectEnd(event) {
     play = false;
     isPlaying = false;
     togglePlayPauseTexture(isPlaying);
-    socket.emit("play", isPlaying);
+   // socket.emit("play", isPlaying);
 
     //
     bodyMeshes.forEach(({ body, mesh }, index) => {
@@ -2449,6 +2469,7 @@ function onSelectEnd(event) {
     });
 
     // Emit the body and mesh data after updating everything
+   /*
     socket.emit(
       "updateBodiesAndMeshes",
       bodies.map((body, index) => ({
@@ -2467,6 +2488,7 @@ function onSelectEnd(event) {
         },
       }))
     );
+    */
   }
   function updateMassText(index) {
     // Get the currently selected object
@@ -2594,6 +2616,7 @@ function onSelectEnd(event) {
           }));
 
           // Emit the playPosition data to socket
+          /*
           socket.emit(
             "playPosition",
             playPosition.map((body, index) => ({
@@ -2609,6 +2632,7 @@ function onSelectEnd(event) {
               color: body.color,
             }))
           );
+          */
   }
 
   function updateBodiesText() {
@@ -2901,10 +2925,12 @@ function onSelectEnd(event) {
         selected.position.x = clampedX;
       }
       updateMassText(selected.index);
+     /*
       socket.emit("sliderSelect", {
         x: selected.position.x,
         index: selected.index,
       });
+      */
           updatePlayPosition();
     }
   }
@@ -2948,7 +2974,7 @@ function onSelectEnd(event) {
           adjustedPosition.z = worldPosition.z - planetPosition.z;
         }
       }
-
+/*
       socket.emit("selectedObjectMoved", {
         x: adjustedPosition.x,
         y: adjustedPosition.y,
@@ -2956,6 +2982,7 @@ function onSelectEnd(event) {
         name: object.name,
         index: object.index,
       });
+      */
     }
   }
 
@@ -2982,6 +3009,7 @@ function render() {
       }
       if (!select && play) {
         updateBodies(); // Runs at 60Hz
+        /*
         socket.emit(
           "updateBodiesAndMeshes",
           bodies.map((body, index) => ({
@@ -3000,6 +3028,7 @@ function render() {
             },
           }))
         );
+        */
         afterUpdateBodies();
       }
     }
