@@ -1379,7 +1379,7 @@ function onMouseMove(event) {
             // If it's a handle, update velocity vectors
             if (selectedObject.name === "Handle") {
               // Update velocity based on handle position relative to its planet
-              const planetGroup = selectedObject.parent;
+              const planetIndex = selectedObject.parent;
               if (planetIndex !== undefined && bodies[planetIndex]) {
                 // Calculate velocity from handle position (this depends on how your handles work)
                 // This is an example - adjust based on your actual implementation
