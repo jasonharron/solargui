@@ -1585,10 +1585,6 @@ function onTouchEnd(event) {
     onMouseUp(event, true);
     touchEnabled = false;
   }
-        
-  updateVelocityArrows();
-  updateGravityArrows(bodies, bodyMeshes);
-                
 }
 
 // Helper function to handle object interactions
